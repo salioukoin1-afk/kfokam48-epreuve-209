@@ -10,6 +10,7 @@ import com.kfokam48.epreuve209.repository.EtudiantRepository;
 import com.kfokam48.epreuve209.repository.PresenceRepository;
 import com.kfokam48.epreuve209.repository.SessionCoursRepository;
 import com.kfokam48.epreuve209.repository.TentativeCodeRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +31,12 @@ import java.time.LocalDateTime;
  * l'étudiant (ligne tentative_code avec session NULL). Une fois le code reconnu, les
  * erreurs suivantes (expiration, clôture, doublon) ne sont pas des tentatives de
  * devinette : elles n'alimentent pas le compteur. Le succès réinitialise le compteur.
+ *
+ * FIX #19 — race condition : deux requêtes concurrentes pour le même (session, étudiant)
+ * passaient toutes les deux le SELECT de l'étape 5 avant que l'une ait commité, puis
+ * heurtaient la contrainte UNIQUE uk_presence_session_etudiant (UK2) lors de l'INSERT.
+ * La DataIntegrityViolationException n'était pas catchée → 500.
+ * Correctif : catch autour de presences.save() → re-lancer DejaPresentException (409).
  */
 @Service
 public class PresenceService {
@@ -85,6 +92,10 @@ public class PresenceService {
             throw new SessionClotureeException();
         }
         // 5. RG15 : une seule présence par (session, étudiant).
+        //    La vérification applicative couvre le cas séquentiel.
+        //    Le catch DataIntegrityViolationException couvre la race condition concurrente
+        //    (fix #19) : deux threads passent tous les deux l'existsBy avant que l'un
+        //    ait commité, la seconde INSERT heurte UK2 → on traduit en 409 DEJA_PRESENT.
         if (presences.existsBySessionIdAndEtudiantId(session.getId(), requete.etudiantId())) {
             throw new DejaPresentException();
         }
@@ -95,16 +106,26 @@ public class PresenceService {
                 .orElseThrow(CodeInconnuException::new));
         presence.setSource("ETUDIANT");
         presence.setCreeAt(maintenant);
-        Presence enregistree = presences.save(presence);
 
-        // Succès : le compteur d'échecs est réinitialisé (US-02).
-        if (compteur != null) {
-            compteur.setEchecsConsecutifs(0);
-            compteur.setBloqueJusqua(null);
+        try {
+            Presence enregistree = presences.save(presence);
+            // Forcer le flush pour déclencher la contrainte DB dans cette transaction.
+            presences.flush();
+
+            // Succès : le compteur d'échecs est réinitialisé (US-02).
+            if (compteur != null) {
+                compteur.setEchecsConsecutifs(0);
+                compteur.setBloqueJusqua(null);
+            }
+
+            return new PresenceResponse(enregistree.getId(), session.getId(),
+                    requete.etudiantId(), presence.getSource());
+
+        } catch (DataIntegrityViolationException e) {
+            // FIX #19 — race condition : la contrainte UK2 a été heurtée en concurrence.
+            // L'étudiant est déjà présent (l'autre requête a gagné) → 409 DEJA_PRESENT.
+            throw new DejaPresentException();
         }
-
-        return new PresenceResponse(enregistree.getId(), session.getId(),
-                requete.etudiantId(), presence.getSource());
     }
 
     /** RG3 : au 5e échec consécutif, bloque 2 minutes. */
