@@ -43,7 +43,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<CorpsErreur> inattendue(Exception ex) {
-        // B4 : jamais de stack trace vers le client.
+        // B4 : jamais de stack trace vers le client — mais toujours tracée côté serveur,
+        // sinon une erreur 500 est indébuggable (leçon du test en conteneur réel).
+        org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler.class);
+        log.error("Erreur interne non gérée", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new CorpsErreur("ERREUR_INTERNE", "Une erreur interne est survenue."));
     }
