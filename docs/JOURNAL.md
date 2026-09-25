@@ -55,5 +55,24 @@ d'ALTER SEQUENCE spécifique H2, une navigation LAZY hors transaction. Chacun co
 démarre ; seul un `docker compose up` sur base vierge le prouve. J'ai aussi appris à distinguer
 un bug serveur d'un défaut de l'outil de test (un curl Windows qui envoyait du non-UTF-8) grâce
 aux logs maintenant activés sur les erreurs internes.
+Étape 3 — Enveloppe
+Fait : bug « deux étudiants en même temps, un seul apparaît » : issue #59 ouverte avec la reproduction avant tout commit, test d'intégration concurrent (requêtes réellement simultanées, répétées) qui échoue 5/5, cause prouvée (le re-tirage RG15 insère deux fois la même relecture, la contrainte unique annule toute la transaction, présence comprise), correctif sur une branche dédiée (verrou de ligne sur l'exercice, doublon → 409), test vert 15/15, suite complète 116/116 (PR #60). Changement de besoin « deux relecteurs » : analyse mise à jour d'abord dans un commit qui le dit (#61 : RG5 révisée, RG16, EF4/EF5/EF9, DEC-13/14, D1, D2, D4, contrat v1.3), migration V4 ajoutée sans modifier V1–V3 et données existantes conservées, backend (#62, 116/116), écrans (#63, Vitest 26/26, build vert). Correctif et évolution : branches et PR séparées.
 
+Bloqué : ~20 min pour rendre le bug reproductible : il n'apparaît que si un exercice attend un relecteur au moment des deux présences simultanées. ~10 min sur une régression de build du test e2e (extension d'import), corrigée dans sa propre PR (#66).
+
+IA :  ia proposé les hypothèses de cause ; je n'ai retenu que celle que le test concurrent a démontrée (log duplicate key relecture_exercice_id_key). Pour le changement de besoin, j'ai tranché les zones d'ombre moi-même (DEC-13 : chaque exercice compte une fois dans la moyenne ; DEC-14 : les notes existantes restent provisoires plutôt que d'être réécrites en définitives) et imposé que la base refuse elle-même un troisième relecteur.
+
+Ce que j'ai sorti du périmètre pour absorber le changement, et pourquoi : la correction d'une relecture (EF11, #64). Avec deux relecteurs, corriger une note modifie la note retenue et le statut provisoire : des cas que je ne pouvais pas tester correctement dans le temps restant. Q15 redevient la règle (« une fois validée, c'est fini », DEC-1 révisé) ; le contrat ne propose plus la correction. Le retrait du code correspondant est suivi par l'issue #64. EF12 et EF13 sont conservés.
+
+Étape 4 — Version finale
+Fait : CHANGELOG.md aligné sur l'historique, README (démarrage depuis un clone, URL, tests), backlog trié, jalon [JALON] v1.0. Vérifications de la version : suite backend 116/116 ; parcours v0.1 validé en navigateur (Playwright Chromium 2/2, en mode normal et en mode visible) et 50/50 contrôles curl de l'API ; écrans deux relecteurs couverts par les tests Vitest (26/26), le parcours e2e à trois étudiants est écrit et listé par Playwright.
+
+Bloqué : la machine a manqué d'espace disque en fin de journée : l'exécution du parcours e2e à trois étudiants contre la stack reconstruite est planifiée juste après la soumission.
+
+IA : relecture du CHANGELOG contre git log --first-parent main, une ligne par PR mergée.
+
+design
+
+Étape 5 — Soumission 
+je devais ameliore le design 
 ---
