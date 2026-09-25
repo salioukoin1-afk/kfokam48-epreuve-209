@@ -48,4 +48,12 @@ format d'erreur), et confrontation au CDC (chaque branche de test nomme sa RGx).
 d'IA attrapées de cette façon : un statut figé à 400 dans le gestionnaire d'erreurs (le contrat
 exige 404 sur le tableau) et un test qui mockait le mock.
 
+**Complément (fin d'étape 2)** : la vérification de bout en bout en conteneur a attrapé trois
+défauts invisibles sous MockMvc — un CHECK avec sous-requête refusé par PostgreSQL, une syntaxe
+d'ALTER SEQUENCE spécifique H2, une navigation LAZY hors transaction. Chacun corrigé par une PR
+(#2, #3, #4) avec CI verte. Leçon majeure : les tests passants ne prouvent pas que l'application
+démarre ; seul un `docker compose up` sur base vierge le prouve. J'ai aussi appris à distinguer
+un bug serveur d'un défaut de l'outil de test (un curl Windows qui envoyait du non-UTF-8) grâce
+aux logs maintenant activés sur les erreurs internes.
+
 ---
