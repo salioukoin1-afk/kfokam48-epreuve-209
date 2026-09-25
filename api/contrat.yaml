@@ -328,6 +328,29 @@ paths:
         "404": { $ref: "#/components/responses/Erreur" }   # RELECTURE_INCONNUE
         "409": { $ref: "#/components/responses/Erreur" }   # SESSION_CLOTUREE
 
+  /api/etudiants:
+    get:
+      summary: Liste des étudiants d'une promotion (extension — Q1 : l'étudiant se choisit dans une liste)
+      parameters:
+        - name: promotionId
+          in: query
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        "200":
+          description: Étudiants de la promotion (id + nom, aucune donnée sensible)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: [id, nom]
+                  properties:
+                    id: { type: integer, format: int64 }
+                    nom: { type: string }
+        "404": { $ref: "#/components/responses/Erreur" }   # PROMOTION_INCONNUE
+
   /api/tableau:
     get:
       summary: Le tableau récapitulatif du formateur   # [IMPOSÉ]
