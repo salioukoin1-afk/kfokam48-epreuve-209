@@ -45,24 +45,43 @@ jamais recalculée côté frontend, aucun `fetch` hors de `src/api/`.
 ## 3. Statut d'avancement
 
 - [x] Étape 1 — Analyse : cahier des charges, 4 diagrammes, backlog, contrat figé, `[JALON] analyse`
-- [ ] Étape 2 — v0.1 : stories Must (une branche + une PR par ticket, issues fermées par les commits)
+- [x] Étape 2 — v0.1 : backend complet (9 endpoints, 69 tests verts, CI), frontend React (3 écrans, build vert), `[JALON] v0.1`
 - [ ] Étape 3 — Enveloppe
-- [ ] Étape 4 — v1.0 : CHANGELOG, README testé depuis un clone vierge
+- [x] Étape 4 — CHANGELOG, README testé depuis un clone vierge (voir ci-dessous), `[JALON] v1.0`
 - [ ] Étape 5 — Épreuve Git (dépôt séparé `kfokam48-gitlab-209`)
 - [ ] Étape 6 — Soumission
 
-## 4. Démarrage
-
-*(à compléter à l'étape 4, testé depuis un clone vierge — cf. EF/NF5 du cahier des charges)*
+## 4. Démarrage — testé depuis un clone vierge
 
 ```bash
-# Objectif final :
+git clone https://github.com/salioukoin1-afk/kfokam48-epreuve-209.git
+cd kfokam48-epreuve-209
 docker compose up --build
-# ou :
-# 1. docker compose up -d db
-# 2. cd backend && ./mvnw spring-boot:run
-# 3. cd frontend && npm install && npm run dev
 ```
 
-Jeu de démonstration chargé automatiquement au démarrage (promotions, étudiants, sessions) :
-le correcteur ne doit jamais ouvrir une application vide.
+Une seule commande. Quand les conteneurs sont montés (≈ 1 minute) :
+
+| Service | URL |
+|---|---|
+| Application (UI React) | http://localhost:5173 |
+| API backend | http://localhost:8080 |
+| PostgreSQL | interne au réseau compose (port 5432 non publié) |
+
+**Jeu de démonstration chargé automatiquement** (migrations Flyway V2/V5) : 1 promotion
+(« Promotion 209 — Yaoundé »), 6 étudiants, 2 sessions (une active `AB12CD`, une expirée
+`XY34EF`), des présences dont une ajoutée « par le formateur ». Le correcteur ouvre une
+application peuplée, jamais vide.
+
+**Scénario de vérification en 2 minutes :**
+1. Écran **Formateur** → « Ouvrir une session » → le code s'affiche, communiquez-le
+2. Écran **Étudiant** → choisir un nom → saisir le code → présence enregistrée
+3. Toujours étudiant → déposer un lien d'exercice → le système assigne un relecteur
+4. Écran **Relecteur** → choisir le nom du relecteur désigné (visible dans le tableau,
+   colonne « Relectures dues ») → noter l'exercice
+5. Retour écran **Étudiant** → la note et le commentaire apparaissent, sans nom de relecteur
+6. Formateur → « Clôturer la session » → toute nouvelle écriture est refusée (`409 SESSION_CLOTUREE`)
+
+Sans Docker : `./mvnw spring-boot:run` dans `backend/` (Java 17, PostgreSQL local configurable
+par `DB_URL`/`DB_USER`/`DB_PASSWORD`) puis `npm install && npm run dev` dans `frontend/`.
+
+Tests : `./mvnw test` (backend, H2 vierge — 69 tests) · `npm run build` (frontend).
