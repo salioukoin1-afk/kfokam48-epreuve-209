@@ -30,12 +30,13 @@ class PresenceControllerTest {
 
     @Test
     void nominal_201_source_ETUDIANT() throws Exception {
+        // Étudiant 106 (V2) : encore absent de la session 1 → présence acceptée.
         mvc.perform(post("/api/presences").contentType(MediaType.APPLICATION_JSON)
-                        .content(corps("AB12CD", 101)))
+                        .content(corps("AB12CD", 106)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.sessionId").value(1))
-                .andExpect(jsonPath("$.etudiantId").value(101))
+                .andExpect(jsonPath("$.etudiantId").value(106))
                 .andExpect(jsonPath("$.source").value("ETUDIANT"));
     }
 
@@ -60,9 +61,9 @@ class PresenceControllerTest {
     @Test
     void deja_present_409() throws Exception {
         mvc.perform(post("/api/presences").contentType(MediaType.APPLICATION_JSON)
-                        .content(corps("AB12CD", 101)));
+                        .content(corps("AB12CD", 106)));
         mvc.perform(post("/api/presences").contentType(MediaType.APPLICATION_JSON)
-                        .content(corps("AB12CD", 101)))
+                        .content(corps("AB12CD", 106)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("DEJA_PRESENT"));
     }
