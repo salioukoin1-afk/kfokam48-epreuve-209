@@ -24,6 +24,10 @@ export const relecturesApi = {
   enAttente: (etudiantId) => api.get(`/api/relectures/en-attente?etudiantId=${etudiantId}`)
 }
 
+export const etudiantsApi = {
+  liste: (promotionId) => api.get(`/api/etudiants?promotionId=${promotionId}`)
+}
+
 export const tableauApi = {
   consulter: (promotionId) => api.get(`/api/tableau?promotionId=${promotionId}`)
 }
