@@ -26,7 +26,12 @@ services:
     ports:
       - "8080:8080"
 
-  # Le frontend sera ajouté ici à son étape (backend d'abord, décision de workflow).
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
 
 volumes:
   pgdata:
