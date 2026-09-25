@@ -22,4 +22,7 @@ public interface RelectureRepository extends JpaRepository<Relecture, Long> {
     /** RG10 : relectures assignées à un étudiant et jamais rendues. */
     @Query("select count(r) from Relecture r where r.relecteur.id = ?1 and r.rendueAt is null")
     int countEnAttenteParRelecteur(Long etudiantId);
+
+    /** La liste « à relire » du relecteur (Q11) — y compris après clôture de session. */
+    List<Relecture> findByRelecteurIdAndRendueAtIsNull(Long relecteurId);
 }
