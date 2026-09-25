@@ -142,3 +142,4 @@ Un même compte « étudiant » endosse donc, selon le contexte, le rôle d'aute
 |---|---|---|
 | 1 | Début d'épreuve | Version initiale |
 | 1.1 | Après relecture d'analyse | Hypothèses jusque-là implicites rédigées en section 7 : dépôt d'exercice subordonné à la présence (`400 NON_PRESENT`), code insensible à la casse, refus `429 BLOCAGE_TENTATIVES` pendant le blocage RG3 ; contradiction Q10/Q15 explicitée dans son propre tableau « Contradictions relevées » |
+| 1.2 | Pendant l'étape 2 (squelette) | Cohérence interne D2/D4 : la ligne `relecture` est désormais créée à l'assignation du relecteur (RG14) avec `note`/`commentaire`/`rendue_at` nullables, afin de rendre l'état `EN_RELECTURE` persistant ; le rendu (EF7) remplit ces champs. Aucune décision client modifiée |

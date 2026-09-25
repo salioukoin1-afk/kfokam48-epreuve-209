@@ -57,9 +57,9 @@ erDiagram
         bigint id PK
         bigint exercice_id FK "unique — RG5 : au plus une relecture par exercice"
         bigint relecteur_id FK "≠ auteur (RG4) — anonyme pour l'auteur (RG7)"
-        int note "entier 0–20 bornes incluses (RG8)"
-        varchar commentaire
-        timestamp rendue_at
+        int note "NULL tant que non rendue ; entier 0–20 bornes incluses au rendu (RG8)"
+        varchar commentaire "NULL tant que non rendue"
+        timestamp rendue_at "NULL = relecteur assigné, note pas encore rendue (état EN_RELECTURE de D4)"
         timestamp maj_at "dernière correction (PATCH, RG9)"
     }
 
@@ -86,3 +86,4 @@ erDiagram
 - `EXERCICE.etudiant_id` (l'auteur) et `RELECTURE.relecteur_id` sont deux rôles du même `ETUDIANT` : une contrainte applicative (service, RG4) interdit `relecteur_id = exercice.etudiant_id` — elle ne peut pas s'exprimer comme une simple clé étrangère.
 - `SESSION_COURS.cloturee_at` nullable est le pivot des verrouillages RG2/RG9/RG11.
 - Le statut de l'exercice est dérivable (`EN_RELECTURE` ⇔ relecture existante non rendue, etc.) mais stocké pour refléter D4 et simplifier le tableau.
+- **Correction v1.2** : la ligne `relecture` est créée **à l'assignation** (RG14), avec `note`/`commentaire`/`rendue_at` nullables — c'est ce qui rend l'état `EN_RELECTURE` de D4 persistant. Le rendu (EF7) remplit `note`, `commentaire` et `rendue_at` ; contrainte de cohérence en base : `rendue_at IS NULL OR note IS NOT NULL`. Aucune décision client (Qx/RGx) n'est modifiée par cette correction — c'est une cohérence interne entre D2 et D4.
