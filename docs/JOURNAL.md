@@ -24,3 +24,28 @@ tickets et des diagrammes a été confronté au cahier des charges ; chaque code
 contrat a été vérifié contre l'annexe B du sujet ; la section 7 a été relue pour qu'aucune
 hypothèse ne reste implicite. Les décisions tranchées (Q10/Q15, upsert RG12, dépôt subordonné à la
 présence, 429 RG3, casse du code) sont réécrites avec mes arguments, pas recopiées.
+
+---
+
+## Étape 2 — Première version
+
+**Fait :** tous les endpoints du contrat v1.2 implémentés (les 5 opérations imposées + présence
+formateur, clôture, PATCH de correction, consultation de note, liste « à relire »), en TDD :
+65 tests verts sur H2 vierge (B6), CI GitHub Actions qui bloque main. Cinq migrations Flyway
+(V1 schéma D2, V2/V5 jeu de démonstration, V3 séquences, V4 RG3). Cycle git flow complet pour
+chaque ticket : branche → commits atomiques → push → merge --no-ff → push.
+
+**Bloqué :** ~40 min au total sur trois pièges : les séquences BIGSERIAL après le jeu de démo à
+ids explicites (V3) ; un UPDATE de clôture fait via JdbcTemplate invisible des appels MockMvc
+(connexions distinctes) — résolu en clôturant par l'API dans le test US-08 ; la navigation JPQL
+qui ignore mon alias Java getEtudiant() — renommée en propriété persistée auteur. Sous-tester le
+jeu de démo m'a coûté deux migrations de correction : leçon retenue.
+
+**IA :** utilisée pour produire le premier jet des entités/services/tests. Vérifié à chaque fois
+par : exécution réelle de la suite de tests (rouge d'abord, vert ensuite — jamais « semble
+marcher »), relecture du code généré contre le contrat ligne à ligne (codes HTTP, corps,
+format d'erreur), et confrontation au CDC (chaque branche de test nomme sa RGx). Deux erreurs
+d'IA attrapées de cette façon : un statut figé à 400 dans le gestionnaire d'erreurs (le contrat
+exige 404 sur le tableau) et un test qui mockait le mock.
+
+---
