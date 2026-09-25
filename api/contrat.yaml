@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Contrat d'API — Gestion de présence, dépôt et relecture d'exercices — KFOKAM48
-  version: "1.1"
+  version: "1.2"
   description: |
     CONTRAT COMPLÉTÉ (v1.1). Les cinq opérations imposées par l'épreuve figurent ci-dessous
     SANS AUCUNE MODIFICATION (chemins, verbes, codes de statut, format d'erreur). Chacune
@@ -251,6 +251,11 @@ paths:
         Création unique de la relecture. La correction ultérieure (avant clôture de session)
         passe par PATCH /api/relectures/{id} — le POST reste une création, ce qui garde
         atteignable l'erreur imposée 409 RELECTURE_DEJA_RENDUE.
+
+        Paramètre query `relecteurId` OBLIGATOIRE (extension v1.2, documentée) : sans
+        authentification (Q1), l'identité du relecteur voyage côté client comme pour toutes
+        les autres opérations ; c'est ce qui rend l'erreur imposée 403 AUTO_RELECTURE
+        atteignable. Corps et codes de statut imposés inchangés.
       parameters:
         - name: id
           in: path
@@ -289,6 +294,7 @@ paths:
         Autorisé uniquement tant que Session.clotureeAt est nul (RG9, tranché Q10 vs Q15).
         Après clôture : 409 SESSION_CLOTUREE, la dernière valeur valide est conservée.
         Le verbe PATCH est requis pour que POST conserve sa sémantique de création imposée.
+        Paramètre query `relecteurId` obligatoire (même mécanisme que le POST).
       parameters:
         - name: id
           in: path
