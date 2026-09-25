@@ -13,4 +13,6 @@ public interface PresenceRepository extends JpaRepository<Presence, Long> {
     /** IDs des étudiants présents à une session — vivier de relecteurs (RG6/RG14). */
     @Query("select p.etudiant.id from Presence p where p.session.id = ?1")
     List<Long> findEtudiantIdsBySessionId(Long sessionId);
+
+    long countByEtudiantId(Long etudiantId);
 }
