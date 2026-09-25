@@ -13,6 +13,10 @@ replay_pid*
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
+e2e/node_modules/
+e2e/test-results/
+e2e/playwright-report/
+e2e/.cache/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
