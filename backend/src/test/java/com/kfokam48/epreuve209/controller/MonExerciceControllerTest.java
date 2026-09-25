@@ -29,9 +29,13 @@ class MonExerciceControllerTest {
     @Autowired MockMvc mvc;
     @Autowired JdbcTemplate jdbc;
 
+    private IntegrationIds ids() { return new IntegrationIds(jdbc); }
+
     private long deposerEtRendre() throws Exception {
         mvc.perform(post("/api/exercices").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"sessionId\":1,\"etudiantId\":101,\"lien\":\"https://exemples.fr/exo\"}"));
+                .content("{\"sessionId\":" + ids().sessionParCode("AB12CD")
+                        + ",\"etudiantId\":" + ids().etudiant("Awa Ndiaye")
+                        + ",\"lien\":\"https://exemples.fr/exo\"}"));
         Long relectureId = jdbc.queryForObject(
                 "SELECT id FROM relecture WHERE rendue_at IS NULL LIMIT 1", Long.class);
         Long relecteur = jdbc.queryForObject(
@@ -47,7 +51,8 @@ class MonExerciceControllerTest {
         deposerEtRendre();
 
         mvc.perform(get("/api/exercices/miens")
-                        .param("sessionId", "1").param("etudiantId", "101"))
+                        .param("sessionId", String.valueOf(ids().sessionParCode("AB12CD")))
+                        .param("etudiantId", String.valueOf(ids().etudiant("Awa Ndiaye"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statut").value("RELU"))
                 .andExpect(jsonPath("$.note").value(14))
@@ -57,10 +62,13 @@ class MonExerciceControllerTest {
     @Test
     void avant_rendu_pas_de_note_mais_le_statut_est_visible() throws Exception {
         mvc.perform(post("/api/exercices").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"sessionId\":1,\"etudiantId\":101,\"lien\":\"https://exemples.fr/exo\"}"));
+                .content("{\"sessionId\":" + ids().sessionParCode("AB12CD")
+                        + ",\"etudiantId\":" + ids().etudiant("Awa Ndiaye")
+                        + ",\"lien\":\"https://exemples.fr/exo\"}"));
 
         mvc.perform(get("/api/exercices/miens")
-                        .param("sessionId", "1").param("etudiantId", "101"))
+                        .param("sessionId", String.valueOf(ids().sessionParCode("AB12CD")))
+                        .param("etudiantId", String.valueOf(ids().etudiant("Awa Ndiaye"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.note").doesNotExist())
                 .andExpect(jsonPath("$.statut").isString());
@@ -69,7 +77,8 @@ class MonExerciceControllerTest {
     @Test
     void exercice_inconnu_404() throws Exception {
         mvc.perform(get("/api/exercices/miens")
-                        .param("sessionId", "1").param("etudiantId", "106"))
+                        .param("sessionId", String.valueOf(ids().sessionParCode("AB12CD")))
+                        .param("etudiantId", String.valueOf(ids().etudiant("Fodé Camara"))))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("EXERCICE_INCONNU"));
     }
@@ -78,15 +87,14 @@ class MonExerciceControllerTest {
     void RG7_le_json_brut_ne_contient_jamais_le_mot_relecteur() throws Exception {
         deposerEtRendre();
 
-        for (String etat : new String[]{"apres rendu"}) {
-            MvcResult resultat = mvc.perform(get("/api/exercices/miens")
-                            .param("sessionId", "1").param("etudiantId", "101"))
-                    .andExpect(status().isOk())
-                    .andReturn();
-            String json = resultat.getResponse().getContentAsString();
-            assertThat(json.toLowerCase())
-                    .as("RG7 : la réponse API ne révèle jamais le relecteur (%s)", etat)
-                    .doesNotContain("relecteur");
-        }
+        MvcResult resultat = mvc.perform(get("/api/exercices/miens")
+                        .param("sessionId", String.valueOf(ids().sessionParCode("AB12CD")))
+                        .param("etudiantId", String.valueOf(ids().etudiant("Awa Ndiaye"))))
+                .andExpect(status().isOk())
+                .andReturn();
+        String json = resultat.getResponse().getContentAsString();
+        assertThat(json.toLowerCase())
+                .as("RG7 : la réponse API ne révèle jamais le relecteur")
+                .doesNotContain("relecteur");
     }
 }

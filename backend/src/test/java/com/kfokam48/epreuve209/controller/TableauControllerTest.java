@@ -30,13 +30,14 @@ class TableauControllerTest {
     @Autowired jakarta.persistence.EntityManager entityManager;
 
     private void flusher() { entityManager.flush(); }
+    private IntegrationIds ids() { return new IntegrationIds(jdbc); }
 
     @Test
     void structure_conforme_au_contrat_6_champs() throws Exception {
         // NB : jsonPath().exists() échoue sur une valeur JSON null (comportement Spring) —
         // la moyenne, null au départ, est donc vérifiée par un matcher nullValue, ce qui
         // prouve à la fois la présence du champ et sa valeur Q16.
-        mvc.perform(get("/api/tableau").param("promotionId", "1"))
+        mvc.perform(get("/api/tableau").param("promotionId", String.valueOf(ids().promotion())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$[0].etudiantId").exists())
@@ -49,18 +50,21 @@ class TableauControllerTest {
 
     @Test
     void moyenne_null_pour_un_etudiant_sans_note_distincte_de_zero() throws Exception {
-        // 101 a des présences mais aucune note au départ → moyenne null.
-        mvc.perform(get("/api/tableau").param("promotionId", "1"))
+        // Awa a des présences mais aucune note au départ → moyenne null.
+        Long awa = ids().etudiant("Awa Ndiaye");
+        mvc.perform(get("/api/tableau").param("promotionId", String.valueOf(ids().promotion())))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.etudiantId == 101)].moyenne").value(org.hamcrest.Matchers.hasItem(
+                .andExpect(jsonPath("$[?(@.etudiantId == " + awa + ")].moyenne").value(org.hamcrest.Matchers.hasItem(
                         org.hamcrest.Matchers.nullValue())));
     }
 
     @Test
     void la_moyenne_reflete_une_relecture_rendue_et_sa_correction() throws Exception {
-        // Flux complet : dépôt 101 → relecteur (102 ou 103...) rend 12 → PATCH 16.
+        // Flux complet : dépôt d'Awa → le relecteur désigné rend 12 → corrige à 16.
         mvc.perform(post("/api/exercices").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"sessionId\":1,\"etudiantId\":101,\"lien\":\"https://exemples.fr/exo\"}"));
+                .content("{\"sessionId\":" + ids().sessionParCode("AB12CD")
+                        + ",\"etudiantId\":" + ids().etudiant("Awa Ndiaye")
+                        + ",\"lien\":\"https://exemples.fr/exo\"}"));
         flusher();
         Long relectureId = jdbc.queryForObject(
                 "SELECT id FROM relecture WHERE rendue_at IS NULL LIMIT 1", Long.class);
@@ -75,24 +79,26 @@ class TableauControllerTest {
                 .content("{\"note\":16,\"commentaire\":\"Amélioré\"}"));
         flusher();
 
-        // La moyenne de l'auteur (101) doit être exactement 16.0 (dernière valeur valide).
-        mvc.perform(get("/api/tableau").param("promotionId", "1"))
+        // La moyenne de l'autrice doit être exactement 16.0 (dernière valeur valide).
+        Long awa = ids().etudiant("Awa Ndiaye");
+        mvc.perform(get("/api/tableau").param("promotionId", String.valueOf(ids().promotion())))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.etudiantId == 101)].moyenne").value(
+                .andExpect(jsonPath("$[?(@.etudiantId == " + awa + ")].moyenne").value(
                         org.hamcrest.Matchers.hasItem(16.0)));
-        // Et le relecteur qui a rendu n'a plus de relecture en attente (RG10 n'est plus déclenché pour lui).
     }
 
     @Test
     void relectures_en_attente_visibles_RG10() throws Exception {
         // Dépôt sans rendre la relecture : le relecteur désigné a 1 relecture en attente.
         mvc.perform(post("/api/exercices").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"sessionId\":1,\"etudiantId\":101,\"lien\":\"https://exemples.fr/exo\"}"));
+                .content("{\"sessionId\":" + ids().sessionParCode("AB12CD")
+                        + ",\"etudiantId\":" + ids().etudiant("Awa Ndiaye")
+                        + ",\"lien\":\"https://exemples.fr/exo\"}"));
         flusher();
         Long relecteur = jdbc.queryForObject(
                 "SELECT relecteur_id FROM relecture WHERE rendue_at IS NULL LIMIT 1", Long.class);
 
-        mvc.perform(get("/api/tableau").param("promotionId", "1"))
+        mvc.perform(get("/api/tableau").param("promotionId", String.valueOf(ids().promotion())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.etudiantId == " + relecteur + ")].relecturesEnAttente")
                         .value(org.hamcrest.Matchers.hasItem(1)));
@@ -100,7 +106,7 @@ class TableauControllerTest {
 
     @Test
     void promotion_inconnue_404_impose() throws Exception {
-        mvc.perform(get("/api/tableau").param("promotionId", "9999"))
+        mvc.perform(get("/api/tableau").param("promotionId", String.valueOf(ids().promotionInconnue())))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("PROMOTION_INCONNUE"));
     }

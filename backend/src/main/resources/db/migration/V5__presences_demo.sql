@@ -1,12 +1,14 @@
--- V5__presences_demo.sql — V2 n'insérait aucune présence : les tests d'intégration du dépôt
--- d'exercice (NON_PRESENT) et le flux relecteur en dépendaient. Complété par migration V5
--- (une migration livrée n'est jamais éditée).
+-- V5__presences_demo.sql — présences de démonstration (V2 n'en insérait pas).
+-- Références par noms/codes (pas d'ids explicites) : portable H2 / PostgreSQL.
 
-INSERT INTO presence (session_id, etudiant_id, source, cree_at) VALUES
-    (1, 101, 'ETUDIANT',  CURRENT_TIMESTAMP),
-    (1, 102, 'ETUDIANT',  CURRENT_TIMESTAMP),
-    (1, 103, 'ETUDIANT',  CURRENT_TIMESTAMP),
-    (1, 104, 'ETUDIANT',  CURRENT_TIMESTAMP),
-    (1, 105, 'FORMATEUR', CURRENT_TIMESTAMP),                       -- démo RG13 : badge « ajouté par le formateur »
-    (2, 101, 'ETUDIANT',  CURRENT_TIMESTAMP - INTERVAL '2' HOUR),
-    (2, 102, 'ETUDIANT',  CURRENT_TIMESTAMP - INTERVAL '2' HOUR);
+INSERT INTO presence (session_id, etudiant_id, source)
+SELECT s.id, e.id, 'ETUDIANT' FROM session_cours s, etudiant e
+WHERE s.code = 'AB12CD' AND e.nom IN ('Awa Ndiaye', 'Boubacar Traoré', 'Chantal Mbeng', 'Djibril Faye');
+
+INSERT INTO presence (session_id, etudiant_id, source)
+SELECT s.id, e.id, 'FORMATEUR' FROM session_cours s, etudiant e
+WHERE s.code = 'AB12CD' AND e.nom = 'Estelle Kona';
+
+INSERT INTO presence (session_id, etudiant_id, source)
+SELECT s.id, e.id, 'ETUDIANT' FROM session_cours s, etudiant e
+WHERE s.code = 'XY34EF' AND e.nom IN ('Awa Ndiaye', 'Boubacar Traoré');
