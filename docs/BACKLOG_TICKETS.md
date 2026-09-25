@@ -1,6 +1,22 @@
 # Backlog — User Stories KFOKAM48
 
-Convention de référence : `US-01` à `US-08` (à recopier comme titre d'issue GitHub, avec le label de priorité). Chaque ticket renvoie explicitement aux EFx/RGx du `CAHIER_DES_CHARGES.md`.
+Convention de référence : `US-01` à `US-10`. Chaque ticket renvoie explicitement aux EFx/RGx du `CAHIER_DES_CHARGES.md`.
+
+**Traçabilité GitHub** — chaque ticket correspond à une issue du dépôt (créée à partir de ce
+document, fermée par la réalisation liée en commentaire) :
+
+| Ticket | Issue | Priorité |
+|---|---|---|
+| US-01 Ouvrir une session | [#6](../../issues/6) | Must |
+| US-02 Marquer sa présence | [#7](../../issues/7) | Must |
+| US-03 Présence formateur | [#8](../../issues/8) | Should |
+| US-04 Déposer/remplacer l'exercice | [#9](../../issues/9) | Must |
+| US-05 Rendre/corriger une relecture | [#10](../../issues/10) | Must |
+| US-06 Consulter sa note | [#11](../../issues/11) | Must |
+| US-07 Tableau récapitulatif | [#12](../../issues/12) | Must |
+| US-08 Clôturer une session | [#13](../../issues/13) | Should |
+| US-09 Durée configurable | [#14](../../issues/14) | Should |
+| US-10 Squelette technique | [#15](../../issues/15) | technique |
 
 **Note de modélisation :** l'assignation automatique du relecteur (EF6, RG6, RG14) n'a pas de template dédié dans la liste fournie car aucun acteur humain ne la déclenche directement — c'est le système qui agit en postcondition du dépôt d'exercice. Je l'ai donc intégrée comme **postcondition** du ticket US-04 plutôt que d'en faire un ticket séparé avec un template forcé qui ne correspondrait pas au cas (pas de formulaire, pas d'acteur humain). Dis-moi si tu préfères un ticket technique séparé.
 
