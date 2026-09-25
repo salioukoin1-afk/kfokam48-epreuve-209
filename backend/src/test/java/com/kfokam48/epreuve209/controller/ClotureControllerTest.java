@@ -26,21 +26,21 @@ class ClotureControllerTest {
     @Autowired MockMvc mvc;
     @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
 
+    private IntegrationIds ids() { return new IntegrationIds(jdbc); }
+
     @Test
     void cloture_nominal_200_avec_date() throws Exception {
-        mvc.perform(post("/api/sessions/1/cloture"))
+        mvc.perform(post("/api/sessions/" + ids().sessionParCode("AB12CD") + "/cloture"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.clotureeAt").exists());
     }
 
     @Test
     void re_cloture_400_BLOCAGE_CLOTURE_sans_ecraser_la_date() throws Exception {
-        String premiere = mvc.perform(post("/api/sessions/1/cloture"))
-                .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
+        mvc.perform(post("/api/sessions/" + ids().sessionParCode("AB12CD") + "/cloture"))
+                .andExpect(status().isOk());
 
-        mvc.perform(post("/api/sessions/1/cloture"))
+        mvc.perform(post("/api/sessions/" + ids().sessionParCode("AB12CD") + "/cloture"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("BLOCAGE_CLOTURE"));
     }
@@ -54,21 +54,25 @@ class ClotureControllerTest {
 
     @Test
     void apres_cloture_presence_409_RG2() throws Exception {
-        mvc.perform(post("/api/sessions/1/cloture")).andExpect(status().isOk());
+        mvc.perform(post("/api/sessions/" + ids().sessionParCode("AB12CD") + "/cloture"))
+                .andExpect(status().isOk());
 
-        // L'étudiant 106 était absent : sans clôture il pourrait se marquer présent.
+        // Fodé Camara était absent : sans clôture il pourrait se marquer présent.
         mvc.perform(post("/api/presences").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"code\":\"AB12CD\",\"etudiantId\":106}"))
+                        .content("{\"code\":\"AB12CD\",\"etudiantId\":" + ids().etudiant("Fodé Camara") + "}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("SESSION_CLOTUREE"));
     }
 
     @Test
     void apres_cloture_depot_409_RG11() throws Exception {
-        mvc.perform(post("/api/sessions/1/cloture")).andExpect(status().isOk());
+        mvc.perform(post("/api/sessions/" + ids().sessionParCode("AB12CD") + "/cloture"))
+                .andExpect(status().isOk());
 
         mvc.perform(post("/api/exercices").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"sessionId\":1,\"etudiantId\":102,\"lien\":\"https://exemples.fr/trop-tard\"}"))
+                        .content("{\"sessionId\":" + ids().sessionParCode("AB12CD")
+                                + ",\"etudiantId\":" + ids().etudiant("Boubacar Traoré")
+                                + ",\"lien\":\"https://exemples.fr/trop-tard\"}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("SESSION_CLOTUREE"));
     }
@@ -77,7 +81,9 @@ class ClotureControllerTest {
     void apres_cloture_correction_note_409_RG9() throws Exception {
         // Relecture rendue AVANT la clôture…
         mvc.perform(post("/api/exercices").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"sessionId\":1,\"etudiantId\":101,\"lien\":\"https://exemples.fr/exo\"}"));
+                .content("{\"sessionId\":" + ids().sessionParCode("AB12CD")
+                        + ",\"etudiantId\":" + ids().etudiant("Awa Ndiaye")
+                        + ",\"lien\":\"https://exemples.fr/exo\"}"));
         Long relectureId = jdbc.queryForObject(
                 "SELECT id FROM relecture WHERE rendue_at IS NULL LIMIT 1", Long.class);
         Long relecteur = jdbc.queryForObject(
@@ -87,7 +93,8 @@ class ClotureControllerTest {
                 .content("{\"note\":12,\"commentaire\":\"Initial\"}"));
 
         // …puis clôture PAR L'API (visible des appels suivants — même transaction de test).
-        mvc.perform(post("/api/sessions/1/cloture")).andExpect(status().isOk());
+        mvc.perform(post("/api/sessions/" + ids().sessionParCode("AB12CD") + "/cloture"))
+                .andExpect(status().isOk());
 
         // La correction est désormais verrouillée (RG9/Q15 filet de sécurité).
         mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders

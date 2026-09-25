@@ -23,17 +23,20 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ExerciceControllerTest {
 
     @Autowired MockMvc mvc;
+    @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     private String corps(Long sessionId, Long etudiantId, String lien) {
         return "{\"sessionId\":" + sessionId + ",\"etudiantId\":" + etudiantId
                 + ",\"lien\":\"" + lien + "\"}";
     }
 
+    private IntegrationIds ids() { return new IntegrationIds(jdbc); }
+
     @Test
     void depot_nominal_201_avec_statut() throws Exception {
-        // Étudiant 101 présent à la session 1 (V2) → dépôt accepté.
+        // Awa Ndiaye est présente à la session AB12CD (V5) → dépôt accepté.
         mvc.perform(post("/api/exercices").contentType(MediaType.APPLICATION_JSON)
-                        .content(corps(1L, 101L, "https://exemples.fr/exo-101")))
+                        .content(corps(ids().sessionParCode("AB12CD"), ids().etudiant("Awa Ndiaye"), "https://exemples.fr/exo")))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.statut").isString());
@@ -41,9 +44,9 @@ class ExerciceControllerTest {
 
     @Test
     void etudiant_absent_400_NON_PRESENT() throws Exception {
-        // Étudiant 106 (V2) n'a pas été marqué présent sur la session 1.
+        // Fodé Camara n'a pas été marqué présent sur la session AB12CD (V5).
         mvc.perform(post("/api/exercices").contentType(MediaType.APPLICATION_JSON)
-                        .content(corps(1L, 106L, "https://exemples.fr/exo-106")))
+                        .content(corps(ids().sessionParCode("AB12CD"), ids().etudiant("Fodé Camara"), "https://exemples.fr/exo")))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("NON_PRESENT"));
     }
@@ -51,20 +54,22 @@ class ExerciceControllerTest {
     @Test
     void lien_invalide_400_LIEN_INVALIDE() throws Exception {
         mvc.perform(post("/api/exercices").contentType(MediaType.APPLICATION_JSON)
-                        .content(corps(1L, 101L, "pas une url")))
+                        .content(corps(ids().sessionParCode("AB12CD"), ids().etudiant("Awa Ndiaye"), "pas une url")))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("LIEN_INVALIDE"));
     }
 
     @Test
     void remplacement_meme_id_pas_de_doublon_RG12() throws Exception {
+        Long sessionId = ids().sessionParCode("AB12CD");
+        Long etudiantId = ids().etudiant("Awa Ndiaye");
         String premier = mvc.perform(post("/api/exercices").contentType(MediaType.APPLICATION_JSON)
-                        .content(corps(1L, 101L, "https://exemples.fr/v1")))
+                        .content(corps(sessionId, etudiantId, "https://exemples.fr/v1")))
                 .andReturn().getResponse().getContentAsString();
         int premierId = ((Number) com.jayway.jsonpath.JsonPath.parse(premier).read("$.id")).intValue();
 
         mvc.perform(post("/api/exercices").contentType(MediaType.APPLICATION_JSON)
-                        .content(corps(1L, 101L, "https://exemples.fr/v2")))
+                        .content(corps(sessionId, etudiantId, "https://exemples.fr/v2")))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(premierId));
     }

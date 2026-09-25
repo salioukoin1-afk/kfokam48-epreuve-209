@@ -16,6 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * B6 — intégration US-03 (présence formateur) et GET /api/relectures/en-attente.
+ * Ids par noms/codes ; flush avant toute lecture JDBC brute.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -25,26 +26,31 @@ class PresenceFormateurControllerTest {
 
     @Autowired MockMvc mvc;
     @Autowired JdbcTemplate jdbc;
+    @Autowired jakarta.persistence.EntityManager entityManager;
+
+    private void flusher() { entityManager.flush(); }
+    private IntegrationIds ids() { return new IntegrationIds(jdbc); }
 
     @Test
     void ajout_manuel_201_source_FORMATEUR() throws Exception {
-        // L'étudiant 106 n'était pas présent : le formateur le marque présent à la main.
+        // Fodé Camara n'était pas présent : le formateur le marque présent à la main (Q14).
         mvc.perform(post("/api/presences/formateur")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"sessionId\":1,\"etudiantId\":106}"))
+                        .content("{\"sessionId\":" + ids().sessionParCode("AB12CD")
+                                + ",\"etudiantId\":" + ids().etudiant("Fodé Camara") + "}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.source").value("FORMATEUR"))
-                .andExpect(jsonPath("$.sessionId").value(1))
-                .andExpect(jsonPath("$.etudiantId").value(106));
+                .andExpect(jsonPath("$.sessionId").value(ids().sessionParCode("AB12CD").intValue()))
+                .andExpect(jsonPath("$.etudiantId").value(ids().etudiant("Fodé Camara").intValue()));
     }
 
     @Test
     void doublon_409_RG15_meme_via_le_formateur() throws Exception {
-        mvc.perform(post("/api/presences/formateur").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"sessionId\":1,\"etudiantId\":106}"));
+        String corps = "{\"sessionId\":" + ids().sessionParCode("AB12CD")
+                + ",\"etudiantId\":" + ids().etudiant("Fodé Camara") + "}";
+        mvc.perform(post("/api/presences/formateur").contentType(MediaType.APPLICATION_JSON).content(corps));
 
-        mvc.perform(post("/api/presences/formateur").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"sessionId\":1,\"etudiantId\":106}"))
+        mvc.perform(post("/api/presences/formateur").contentType(MediaType.APPLICATION_JSON).content(corps))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("DEJA_PRESENT"));
     }
@@ -52,19 +58,23 @@ class PresenceFormateurControllerTest {
     @Test
     void presence_formateur_visible_dans_le_tableau() throws Exception {
         mvc.perform(post("/api/presences/formateur").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"sessionId\":1,\"etudiantId\":106}"));
+                .content("{\"sessionId\":" + ids().sessionParCode("AB12CD")
+                        + ",\"etudiantId\":" + ids().etudiant("Fodé Camara") + "}"));
 
-        mvc.perform(get("/api/tableau").param("promotionId", "1"))
+        mvc.perform(get("/api/tableau").param("promotionId", String.valueOf(ids().promotion())))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.etudiantId == 106)].presences")
+                .andExpect(jsonPath("$[?(@.etudiantId == " + ids().etudiant("Fodé Camara") + ")].presences")
                         .value(org.hamcrest.Matchers.hasItem(1)));
     }
 
     @Test
     void liste_en_attente_du_relecteur_RG10() throws Exception {
-        // Un dépôt désigne un relecteur qui n'a encore rien rendu.
+        // Un dépôt d'Awa désigne un relecteur qui n'a encore rien rendu.
         mvc.perform(post("/api/exercices").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"sessionId\":1,\"etudiantId\":101,\"lien\":\"https://exemples.fr/exo\"}"));
+                .content("{\"sessionId\":" + ids().sessionParCode("AB12CD")
+                        + ",\"etudiantId\":" + ids().etudiant("Awa Ndiaye")
+                        + ",\"lien\":\"https://exemples.fr/exo\"}"));
+        flusher();
         Long relecteur = jdbc.queryForObject(
                 "SELECT relecteur_id FROM relecture WHERE rendue_at IS NULL LIMIT 1", Long.class);
 
