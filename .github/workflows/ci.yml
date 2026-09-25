@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend — build + tests (B6)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 17 (B1)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Rend le wrapper exécutable (Linux)
+        run: chmod +x mvnw
+
+      # Poste vierge par construction : H2 en mémoire (profil test), aucune base locale.
+      # La CI refuse tout merge qui casse les tests — main reste toujours saine.
+      - name: Tests (unitaires + intégration)
+        run: ./mvnw -B test
+
+      - name: Package sans re-exécuter les tests
+        run: ./mvnw -B package -DskipTests
