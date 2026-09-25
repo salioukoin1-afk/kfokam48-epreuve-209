@@ -33,3 +33,77 @@ jobs:
 
       - name: Package sans re-exécuter les tests
         run: ./mvnw -B package -DskipTests
+
+  frontend-build:
+    name: Frontend — build Vite (F1)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build de production
+        run: npm run build
+
+  # ──────────────────────────────────────────────────────────────────────────────
+  # Tests E2E Playwright
+  #
+  # NOTE : ce job est DÉSACTIVÉ dans la CI GitHub Actions car il exige un backend
+  # Spring Boot + PostgreSQL actifs (docker compose up), ce qui dépasse la portée
+  # d'un runner GitHub Actions standard sans service containers complets.
+  #
+  # Pour exécuter les tests E2E localement :
+  #   docker compose up            # démarrer tous les services
+  #   cd e2e && npm install        # installer @playwright/test
+  #   npx playwright install chromium  # télécharger le navigateur
+  #   npm test                     # lancer les tests
+  #
+  # Rapport HTML : npm run report (après les tests)
+  #
+  # Pour activer ce job en CI (si un service PostgreSQL + backend sont configurés) :
+  #   1. Supprimer le commentaire `if: false` ci-dessous
+  #   2. Ajouter des services docker-compose dans le runner ou utiliser une action
+  #      dédiée (ex. docker/compose-action) pour démarrer le stack complet.
+  # ──────────────────────────────────────────────────────────────────────────────
+  e2e:
+    name: E2E Playwright (local uniquement — voir commentaire)
+    runs-on: ubuntu-latest
+    if: false  # Désactivé : nécessite docker compose up (backend + DB) — exécuter localement
+    needs: [backend, frontend-build]
+    defaults:
+      run:
+        working-directory: e2e
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Playwright
+        run: npm ci && npx playwright install chromium
+
+      # Prérequis non satisfait en CI standard :
+      # docker compose up doit avoir démarré le backend et la DB.
+      - name: Lancer les tests E2E
+        run: npm test
+
+      - name: Upload rapport Playwright
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 14
