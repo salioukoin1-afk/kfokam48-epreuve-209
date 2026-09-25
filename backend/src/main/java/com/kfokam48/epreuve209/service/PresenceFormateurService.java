@@ -53,8 +53,13 @@ public class PresenceFormateurService {
         presence.setEtudiant(etudiants.getReferenceById(etudiantId));
         presence.setSource("FORMATEUR");          // RG13 : badge « ajouté par le formateur »
         presence.setCreeAt(LocalDateTime.now(horloge));
-        Presence enregistree = presences.save(presence);
-
-        return new PresenceResponse(enregistree.getId(), sessionId, etudiantId, "FORMATEUR");
+        try {
+            Presence enregistree = presences.save(presence);
+            presences.flush();
+            return new PresenceResponse(enregistree.getId(), sessionId, etudiantId, "FORMATEUR");
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            // FIX #19 — même race condition que PresenceService : UK2 heurtée en concurrence.
+            throw new DejaPresentException();
+        }
     }
 }
