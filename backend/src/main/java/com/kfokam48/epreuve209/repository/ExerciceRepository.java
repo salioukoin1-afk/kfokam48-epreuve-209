@@ -7,4 +7,6 @@ import java.util.Optional;
 public interface ExerciceRepository extends JpaRepository<Exercice, Long> {
 
     Optional<Exercice> findBySessionIdAndAuteurId(Long sessionId, Long auteurId);
+
+    long countByAuteurId(Long auteurId);
 }
