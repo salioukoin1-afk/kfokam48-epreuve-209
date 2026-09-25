@@ -10,6 +10,9 @@ spring:
     open-in-view: false
   flyway:
     enabled: true
+    # La base H2 de test vit le temps de la JVM : si les checksums de migrations changent
+    # (correction de V1 après l'échec PostgreSQL), on repart d'une base propre.
+    clean-on-validation-error: true
 
 # Valeur volontairement différente du défaut : prouve que RG1 lit la configuration (US-09)
 presence:

@@ -52,7 +52,10 @@ CREATE TABLE relecture (
     rendue_at    TIMESTAMP   NULL,
     maj_at       TIMESTAMP   NULL,
     CONSTRAINT uk_relecture_exercice UNIQUE (exercice_id),                              -- UK4 / RG5
-    CONSTRAINT rg4_pas_d_auto_relecture CHECK (relecteur_id <> (SELECT etudiant_id FROM exercice WHERE exercice.id = relecture.exercice_id)),
+    -- RG4 (relecteur ≠ auteur) ne peut PAS être une contrainte CHECK : PostgreSQL interdit
+    -- les sous-requêtes dedans (découvert au premier docker compose up — H2 l'acceptait).
+    -- Elle est appliquée en défense dans RelectureService, testée unitairement + en intégration,
+    -- et l'assignation automatique (RG6/RG14) ne peut de toute façon jamais la produire.
     CONSTRAINT rg9_coherence CHECK (rendue_at IS NULL OR note IS NOT NULL)
 );
 
