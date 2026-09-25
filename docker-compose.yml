@@ -1,0 +1,32 @@
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-kfokam48}
+      POSTGRES_USER: ${POSTGRES_USER:-kfokam48}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kfokam48}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kfokam48} -d ${POSTGRES_DB:-kfokam48}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-kfokam48}
+      DB_USER: ${POSTGRES_USER:-kfokam48}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-kfokam48}
+      PRESENCE_EXPIRATION_MINUTES: ${PRESENCE_EXPIRATION_MINUTES:-15}
+    ports:
+      - "8080:8080"
+
+  # Le frontend sera ajouté ici à son étape (backend d'abord, décision de workflow).
+
+volumes:
+  pgdata:
