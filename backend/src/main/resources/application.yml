@@ -14,6 +14,11 @@ spring:
 server:
   port: 8080
 
+# Swagger UI : la documentation interactive de l'API (contrat v1.2)
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
 # US-09 : durée de vie du code de présence (RG1) — configurable, jamais en dur
 presence:
   expiration-minutes: ${PRESENCE_EXPIRATION_MINUTES:15}

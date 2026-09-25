@@ -51,6 +51,13 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Documentation interactive de l'API : Swagger UI servira le contrat v1.2 -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.6.0</version>
+        </dependency>
+
         <!-- B6 : les tests tournent sur un poste vierge (H2 en mode PostgreSQL, jamais la base de dev) -->
         <dependency>
             <groupId>com.h2database</groupId>
